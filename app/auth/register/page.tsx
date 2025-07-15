@@ -39,6 +39,7 @@ export default function RegisterPage() {
 
     setLoading(true)
     try {
+      // Storing the user in the 
       await registerUser(data.email, data.password, data.name)
       toast({
         title: "Account created!",

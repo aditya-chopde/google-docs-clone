@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -173,10 +173,6 @@ export function LandingPage() {
                 <Button size="lg" onClick={() => router.push("/auth/register")} className="text-lg px-8 py-3">
                   Start Writing Free
                   <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-                <Button size="lg" variant="outline" className="text-lg px-8 py-3 bg-transparent">
-                  <Play className="mr-2 h-5 w-5" />
-                  Watch Demo
                 </Button>
               </div>
             </motion.div>
