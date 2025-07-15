@@ -37,15 +37,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    // Mock authentication
-    const mockUser: User = {
-      id: "1",
-      email,
-      name: email.split("@")[0],
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
-    };
-    setUser(mockUser);
-    localStorage.setItem("docuwrite_user", JSON.stringify(mockUser));
+    try {
+      const { data: authData, error: authError } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+      console.log(authData);
+      const userId = authData?.user?.id;
+      console.log("userId: " + userId);
+      const { data: dataRes } = await supabase
+        .from("users_data")
+        .select("*")
+        .eq("id", userId);
+      const res = dataRes?.[0];
+
+      setUser({
+        id: res.id,
+        name: res.name,
+        email: res.email,
+        avatar: res.avatar,
+      });
+
+      if (authError) {
+        throw new Error("Login Error: " + authError.message);
+      }
+    } catch (error: any) {
+      throw new Error(error.message || "Something went wrong loggin in");
+    }
   };
 
   const register = async (email: string, password: string, name: string) => {
