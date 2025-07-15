@@ -4,7 +4,6 @@ import { supabase } from "@/lib/supabase";
 import type React from "react";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { toast } from "sonner";
 
 interface User {
   id: string;
@@ -27,13 +26,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Check for existing session
-    const savedUser = localStorage.getItem("docuwrite_user");
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
+  const getUser = async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+
+    const {data: userRes} = await supabase.from("users_data").select("*").eq("id", userId);
+    const user = userRes?.[0];
+    setUser({
+      id: user.id,
+      name: user.name,
+      email: user.email, 
+      avatar: user.avatar,
+    })
     setLoading(false);
+  };
+
+  useEffect(() => {
+    getUser();
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -44,9 +55,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           password,
         });
 
-      console.log(authData);
       const userId = authData?.user?.id;
-      console.log("userId: " + userId);
+
       const { data: dataRes } = await supabase
         .from("users_data")
         .select("*")
@@ -113,9 +123,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
     setUser(null);
-    localStorage.removeItem("docuwrite_user");
+    await supabase.auth.signOut();
   };
 
   return (
