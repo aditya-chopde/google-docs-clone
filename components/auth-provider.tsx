@@ -27,21 +27,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const getUser = async () => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    const userId = session?.user?.id;
+  const {
+    data: { session },
+    error: sessionError,
+  } = await supabase.auth.getSession();
 
-    const {data: userRes} = await supabase.from("users_data").select("*").eq("id", userId);
-    const user = userRes?.[0];
-    setUser({
-      id: user.id,
-      name: user.name,
-      email: user.email, 
-      avatar: user.avatar,
-    })
+  const userId = session?.user?.id;
+  console.log("Session user ID:", userId);
+
+  if (!userId) {
+    console.warn("No user ID found in session.");
     setLoading(false);
-  };
+    return;
+  }
+
+  const { data: userRes, error: fetchError } = await supabase
+    .from("users_data")
+    .select("*")
+    .eq("id", userId);
+
+  if (fetchError) {
+    console.error("Error fetching user from users_data:", fetchError.message);
+    setLoading(false);
+    return;
+  }
+
+  const user = userRes?.[0];
+  if (!user) {
+    console.warn("No user found with this ID in users_data table.");
+    setLoading(false);
+    return;
+  }
+
+  setUser({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    avatar: user.avatar,
+  });
+
+  setLoading(false);
+};
+
 
   useEffect(() => {
     getUser();
