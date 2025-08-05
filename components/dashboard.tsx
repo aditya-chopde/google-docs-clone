@@ -40,6 +40,8 @@ export function Dashboard() {
       }))
       setDocuments(parsedDocs)
     }
+    
+    // TODO - Fetch documents from database
   }, [])
 
   const createDocument = () => {
@@ -54,6 +56,7 @@ export function Dashboard() {
 
     const updatedDocs = [newDoc, ...documents]
     setDocuments(updatedDocs)
+    // TODO - Save to database
     localStorage.setItem("docuwrite_documents", JSON.stringify(updatedDocs))
 
     router.push(`/doc/${newDoc.id}`)
@@ -63,7 +66,7 @@ export function Dashboard() {
     const updatedDocs = documents.filter((doc) => doc.id !== docId)
     setDocuments(updatedDocs)
     localStorage.setItem("docuwrite_documents", JSON.stringify(updatedDocs))
-
+    // TODO - Delete from database
     toast({
       title: "Document deleted",
       description: "The document has been permanently deleted.",

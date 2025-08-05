@@ -67,11 +67,13 @@ interface DocumentEditorProps {
 // Add debounce utility function before the component
 function debounce<T extends (...args: any[]) => any>(func: T, wait: number): T {
   let timeout: NodeJS.Timeout
-  return ((...args: any[]) => {
+  return function (this: ThisParameterType<T>, ...args: Parameters<T>) {
+    const context = this
     clearTimeout(timeout)
-    timeout = setTimeout(() => func.apply(this, args), wait)
-  }) as T
+    timeout = setTimeout(() => func.apply(context, args), wait)
+  } as T
 }
+
 
 export function DocumentEditor({ document, onUpdate }: DocumentEditorProps) {
   const [title, setTitle] = useState(document.title)

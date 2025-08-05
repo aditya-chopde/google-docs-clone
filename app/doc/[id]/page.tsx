@@ -53,11 +53,12 @@ export default function DocumentPage() {
 
   const updateDocument = (updates: Partial<Document>) => {
     if (!document) return
-
+    console.log("updating the docs")
     const updatedDoc = { ...document, ...updates, updatedAt: new Date() }
     setDocument(updatedDoc)
 
     // Update localStorage
+    // TODO - Update in database
     const savedDocs = localStorage.getItem("docuwrite_documents")
     if (savedDocs) {
       const documents = JSON.parse(savedDocs)
