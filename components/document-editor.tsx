@@ -198,21 +198,23 @@ export function DocumentEditor({ document, onUpdate }: DocumentEditorProps) {
   }
 
   const formatLastSaved = (date: Date) => {
+    const newDate = new Date(date)
     const now = new Date()
-    const diffInMinutes = (now.getTime() - date.getTime()) / (1000 * 60)
+    const diffInMinutes = (now.getTime() - newDate.getTime()) / (1000 * 60)
 
     if (diffInMinutes < 1) return "Saved just now"
     if (diffInMinutes < 60) return `Saved ${Math.floor(diffInMinutes)} minutes ago`
-    return `Saved at ${date.toLocaleTimeString()}`
+    return `Saved at ${newDate.toLocaleTimeString()}`
   }
 
   const formatLastSeen = (date: Date) => {
+    const newDate = new Date(date);
     const now = new Date()
-    const diffInMinutes = (now.getTime() - date.getTime()) / (1000 * 60)
+    const diffInMinutes = (now.getTime() - newDate.getTime()) / (1000 * 60)
 
     if (diffInMinutes < 60) return `${Math.floor(diffInMinutes)}m ago`
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`
-    return date.toLocaleDateString()
+    return newDate.toLocaleDateString()
   }
 
   const onlineCollaborators = useMemo(() => collaborators.filter((c) => c.isOnline), [collaborators])

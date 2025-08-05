@@ -1,94 +1,158 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { motion } from "framer-motion"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Badge } from "@/components/ui/badge"
-import { useAuth } from "@/components/auth-provider"
-import { FileText, Plus, Search, MoreVertical, Trash2, Edit, Clock, Users } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/components/auth-provider";
+import {
+  FileText,
+  Plus,
+  Search,
+  MoreVertical,
+  Trash2,
+  Edit,
+  Clock,
+  Users,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
 
 interface Document {
-  id: string
-  title: string
-  content: string
-  createdAt: Date
-  updatedAt: Date
-  collaborators: string[]
+  id: string;
+  owner_id: string;
+  title: string;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
+  collaborators: string[];
 }
 
 export function Dashboard() {
-  const [documents, setDocuments] = useState<Document[]>([])
-  const [searchQuery, setSearchQuery] = useState("")
-  const { user, logout } = useAuth()
-  const router = useRouter()
-  const { toast } = useToast()
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const { user, logout } = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const fetchDocs = async () => {
+    const { data, error } = await supabase
+      .from("documents")
+      .select()
+      .eq("owner_id", user?.id || "")
+      .order("updatedAt", { ascending: false });
+
+    if (data) {
+      setDocuments(data);
+    }
+
+    if (error) {
+      toast({
+        title: "Error Fetching Documents",
+        description: error.message,
+      });
+    }
+
+    console.log("document: ", documents);
+  };
 
   useEffect(() => {
-    // Load documents from localStorage
-    const savedDocs = localStorage.getItem("docuwrite_documents")
-    if (savedDocs) {
-      const parsedDocs = JSON.parse(savedDocs).map((doc: any) => ({
-        ...doc,
-        createdAt: new Date(doc.createdAt),
-        updatedAt: new Date(doc.updatedAt),
-      }))
-      setDocuments(parsedDocs)
+    fetchDocs();
+  }, []);
+
+  const createDocument = async () => {
+    const { data, error } = await supabase
+      .from("documents")
+      .insert([
+        {
+          owner_id: user?.id || "",
+          title: "Untitle Document",
+          content: "",
+          collaborators: [user?.id || ""],
+        },
+      ])
+      .select()
+      .single();
+
+    fetchDocs();
+
+    if (data) {
+      console.log(data);
+      toast({
+        title: "Document created",
+        description: "Your new document has been created successfully.",
+      });
     }
-    
-    // TODO - Fetch documents from database
-  }, [])
 
-  const createDocument = () => {
-    const newDoc: Document = {
-      id: Date.now().toString(),
-      title: "Untitled Document",
-      content: "",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      collaborators: [user?.id || ""],
+    if (error) {
+      toast({
+        title: "Error Ocurred",
+        description: error.message,
+        variant: "destructive",
+      });
     }
 
-    const updatedDocs = [newDoc, ...documents]
-    setDocuments(updatedDocs)
-    // TODO - Save to database
-    localStorage.setItem("docuwrite_documents", JSON.stringify(updatedDocs))
+    // localStorage.setItem("docuwrite_documents", JSON.stringify(updatedDocs));
 
-    router.push(`/doc/${newDoc.id}`)
-  }
+    // router.push(`/doc/${newDoc.id}`);
+    router.push(`/doc/${data.id}`);
+  };
 
-  const deleteDocument = (docId: string) => {
-    const updatedDocs = documents.filter((doc) => doc.id !== docId)
-    setDocuments(updatedDocs)
-    localStorage.setItem("docuwrite_documents", JSON.stringify(updatedDocs))
-    // TODO - Delete from database
+  const deleteDocument = async (docId: string) => {
+    const { data, error } = await supabase
+      .from("documents")
+      .delete()
+      .eq("id", docId)
+      .select();
+
+    if (error) {
+      toast({
+        title: "Error deleting document",
+        description: error.message,
+        variant: "destructive",
+      })
+    }
     toast({
       title: "Document deleted",
       description: "The document has been permanently deleted.",
-    })
-  }
+    });
+  };
 
-  const filteredDocuments = documents.filter((doc) => doc.title.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredDocuments = documents.filter((doc) =>
+    doc.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const formatDate = (date: Date) => {
-    const now = new Date()
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+    const newDate = new Date(date);
+    const now = new Date();
+    const diffInHours = (now.getTime() - newDate.getTime()) / (1000 * 60 * 60);
 
     if (diffInHours < 1) {
-      return "Just now"
+      return "Just now";
     } else if (diffInHours < 24) {
-      return `${Math.floor(diffInHours)} hours ago`
+      return `${Math.floor(diffInHours)} hours ago`;
     } else if (diffInHours < 48) {
-      return "Yesterday"
+      return "Yesterday";
     } else {
-      return date.toLocaleDateString()
+      return newDate.toLocaleDateString();
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -98,7 +162,7 @@ export function Dashboard() {
           <div className="flex items-center space-x-4">
             <button
               onClick={() => {
-                logout()
+                logout();
                 // This will redirect to landing page since user will be null
               }}
               className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
@@ -121,9 +185,15 @@ export function Dashboard() {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <Button
+                  variant="ghost"
+                  className="relative h-8 w-8 rounded-full"
+                >
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user?.avatar || "/placeholder.svg"} alt={user?.name} />
+                    <AvatarImage
+                      src={user?.avatar || "/placeholder.svg"}
+                      alt={user?.name}
+                    />
                     <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
                   </Avatar>
                 </Button>
@@ -131,8 +201,12 @@ export function Dashboard() {
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuItem className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user?.name}</p>
-                    <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                    <p className="text-sm font-medium leading-none">
+                      {user?.name}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user?.email}
+                    </p>
                   </div>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={logout}>Log out</DropdownMenuItem>
@@ -147,9 +221,14 @@ export function Dashboard() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-3xl font-bold text-gray-900">Your Documents</h2>
-            <p className="text-gray-600 mt-1">Create and manage your documents</p>
+            <p className="text-gray-600 mt-1">
+              Create and manage your documents
+            </p>
           </div>
-          <Button onClick={createDocument} className="flex items-center space-x-2">
+          <Button
+            onClick={createDocument}
+            className="flex items-center space-x-2"
+          >
             <Plus className="h-4 w-4" />
             <span>New Document</span>
           </Button>
@@ -157,13 +236,19 @@ export function Dashboard() {
 
         {/* Documents Grid */}
         {filteredDocuments.length === 0 ? (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center py-12"
+          >
             <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
               {searchQuery ? "No documents found" : "No documents yet"}
             </h3>
             <p className="text-gray-600 mb-6">
-              {searchQuery ? "Try adjusting your search terms" : "Create your first document to get started"}
+              {searchQuery
+                ? "Try adjusting your search terms"
+                : "Create your first document to get started"}
             </p>
             {!searchQuery && (
               <Button onClick={createDocument}>
@@ -198,16 +283,25 @@ export function Dashboard() {
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                          >
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => router.push(`/doc/${doc.id}`)}>
+                          <DropdownMenuItem
+                            onClick={() => router.push(`/doc/${doc.id}`)}
+                          >
                             <Edit className="h-4 w-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => deleteDocument(doc.id)} className="text-red-600">
+                          <DropdownMenuItem
+                            onClick={() => deleteDocument(doc.id)}
+                            className="text-red-600"
+                          >
                             <Trash2 className="h-4 w-4 mr-2" />
                             Delete
                           </DropdownMenuItem>
@@ -221,15 +315,22 @@ export function Dashboard() {
                       onClick={() => router.push(`/doc/${doc.id}`)}
                     >
                       {doc.content
-                        ? doc.content.replace(/<[^>]*>/g, "").substring(0, 100) + "..."
+                        ? doc.content
+                            .replace(/<[^>]*>/g, "")
+                            .substring(0, 100) + "..."
                         : "No content yet..."}
                     </div>
                     <div className="flex items-center justify-between">
-                      <Badge variant="secondary" className="flex items-center space-x-1">
+                      <Badge
+                        variant="secondary"
+                        className="flex items-center space-x-1"
+                      >
                         <Users className="h-3 w-3" />
                         <span>{doc.collaborators.length}</span>
                       </Badge>
-                      <div className="text-xs text-gray-500">{doc.content.length} characters</div>
+                      <div className="text-xs text-gray-500">
+                        {doc.content.length} characters
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -239,5 +340,5 @@ export function Dashboard() {
         )}
       </main>
     </div>
-  )
+  );
 }
