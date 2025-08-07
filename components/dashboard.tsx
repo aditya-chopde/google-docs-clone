@@ -68,8 +68,6 @@ export function Dashboard() {
         description: error.message,
       });
     }
-
-    console.log("document: ", documents);
   };
 
   useEffect(() => {
@@ -93,7 +91,6 @@ export function Dashboard() {
     fetchDocs();
 
     if (data) {
-      console.log(data);
       toast({
         title: "Document created",
         description: "Your new document has been created successfully.",
@@ -108,9 +105,6 @@ export function Dashboard() {
       });
     }
 
-    // localStorage.setItem("docuwrite_documents", JSON.stringify(updatedDocs));
-
-    // router.push(`/doc/${newDoc.id}`);
     router.push(`/doc/${data.id}`);
   };
 

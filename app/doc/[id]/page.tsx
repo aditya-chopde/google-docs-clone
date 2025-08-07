@@ -55,10 +55,8 @@ export default function DocumentPage() {
 
   const updateDocument = async (updates: Partial<Document>) => {
     if (!document) return;
-    console.log("updating the docs: ", document.id);
     const updatedDoc = { ...document, ...updates, updatedAt: new Date() };
     setDocument(updatedDoc);
-    console.log(updatedDoc);
 
     const { data, error } = await supabase
       .from("documents")
@@ -66,9 +64,6 @@ export default function DocumentPage() {
       .eq("id", document.id)
       .select()
       .single();
-    if (data) {
-      console.log("Document Updated in DB: ", data);
-    }
 
     if (error) {
       toast({
